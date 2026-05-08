@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}{{ article.title }} - Articles{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row">
+        <!-- Article Content -->
+        <div class="col-lg-8">
+            {% if article.thumbnail_url %}
+            <img src="{{ article.thumbnail_url }}" alt="{{ article.title }}" class="img-fluid rounded mb-4" style="max-height: 400px; object-fit: cover;">
+            {% endif %}
+
+            <!-- Article Header -->
+            <div class="mb-4">
+                <div class="mb-2">
+                    {% if article.category %}
+                    <span class="badge bg-info me-2">{{ article.category }}</span>
+                    {% endif %}
+                    {% for tag in article.tags %}
+                    <span class="badge bg-secondary me-2">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                
+                <h1 class="mb-3">{{ article.title }}</h1>
+                
+                <div class="article-meta text-muted mb-4">
+                    <span><i class="fas fa-user"></i> By {{ article.author }}</span>
+                    <span class="ms-3"><i class="fas fa-calendar"></i> {{ article.created_at.strftime('%B %d, %Y') }}</span>
+                    <span class="ms-3"><i class="fas fa-clock"></i> {{ article.read_time_minutes }} min read</span>
+                    <span class="ms-3"><i class="fas fa-eye"></i> {{ article.views }} views</span>
+                </div>
+                
+                {% if article.description %}
+                <p class="lead text-muted">{{ article.description }}</p>
+                {% endif %}
+                
+                <hr>
+            </div>
+
+            <!-- Article Content -->
+            <div class="article-content mb-5">
+                {{ article.content|safe }}
+            </div>
+
+            <!-- Article Footer -->
+            <hr>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <button class="btn btn-warning me-2" onclick="toggleBookmark({{ article.id }}, true)" id="bookmark-btn">
+                        <i class="{% if is_bookmarked %}fas{% else %}far{% endif %} fa-bookmark"></i>
+                        <span id="bookmark-text">{% if is_bookmarked %}Bookmarked{% else %}Bookmark{% endif %}</span>
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="shareArticle()">
+                        <i class="fas fa-share-alt"></i> Share
+                    </button>
+                </div>
+                <div class="text-muted small">
+                    <span class="badge bg-light text-dark">{{ article.bookmarks_count }} bookmarks</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Author Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">About the Author</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px; font-size: 32px;">
+                        {{ article.author[0].upper() }}
+                    </div>
+                    <h6>{{ article.author }}</h6>
+                    <p class="text-muted small">Educational content creator</p>
+                </div>
+            </div>
+
+            <!-- Related Articles -->
+            {% if related_articles %}
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">Related Articles</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for rel_article in related_articles %}
+                        <a href="{{ url_for('quiz.view_article', slug=rel_article.slug) }}" class="list-group-item list-group-item-action">
+                            <h6 class="mb-1">{{ rel_article.title }}</h6>
+                            <small class="text-muted">{{ rel_article.read_time_minutes }} min read</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('quiz.articles_list') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Back to Articles
+                </a>
+                <div>
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('quiz.my_results') }}" class="btn btn-info me-2">
+                        <i class="fas fa-chart-line"></i> My Results
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('quiz.index') }}" class="btn btn-primary">
+                        <i class="fas fa-tasks"></i> Take a Quiz
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .article-content {
+        line-height: 1.8;
+        font-size: 16px;
+    }
+    
+    .article-content h2 {
+        margin-top: 30px;
+        margin-bottom: 15px;
+        color: #333;
+    }
+    
+    .article-content p {
+        margin-bottom: 15px;
+    }
+    
+    .article-content img {
+        max-width: 100%;
+        height: auto;
+        margin: 20px 0;
+    }
+</style>
+
+<script>
+function toggleBookmark(articleId, showMessage = false) {
+    if (!{{ 'true' if current_user.is_authenticated else 'false' }}) {
+        window.location.href = '{{ url_for("quiz.login") }}';
+        return;
+    }
+    
+    fetch(`/api/article/${articleId}/bookmark`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const btn = document.getElementById('bookmark-btn');
+        const text = document.getElementById('bookmark-text');
+        const icon = btn.querySelector('i');
+        
+        if (data.bookmarked) {
+            btn.classList.remove('btn-outline-warning');
+            btn.classList.add('btn-warning');
+            icon.classList.remove('far');
+            icon.classList.add('fas');
+            text.textContent = 'Bookmarked';
+            if (showMessage) alert('Article bookmarked!');
+        } else {
+            btn.classList.add('btn-outline-warning');
+            btn.classList.remove('btn-warning');
+            icon.classList.add('far');
+            icon.classList.remove('fas');
+            text.textContent = 'Bookmark';
+            if (showMessage) alert('Bookmark removed!');
+        }
+    });
+}
+
+function shareArticle() {
+    if (navigator.share) {
+        navigator.share({
+            title: '{{ article.title }}',
+            text: '{{ article.description }}',
+            url: window.location.href
+        });
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(window.location.href);
+        alert('Article link copied to clipboard!');
+    }
+}
+</script>
+{% endblock %}

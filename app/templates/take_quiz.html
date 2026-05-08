@@ -1,0 +1,521 @@
+{% extends "base.html" %}
+
+{% block title %}Take Quiz - Poll Quiz App{% endblock %}
+
+{% block extra_css %}
+<style>
+.quiz-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.quiz-info {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.start-screen {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.start-screen h2 {
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+.start-screen p {
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+
+.poll-question {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.question-number {
+    color: #667eea;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.question-text {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.question-image {
+    max-width: 100%;
+    height: auto;
+    max-height: 300px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: block;
+}
+
+.progress-bar-container {
+    background: #e9ecef;
+    height: 8px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transition: width 0.3s;
+}
+
+.poll-options {
+    display: grid;
+    gap: 12px;
+}
+
+.poll-option {
+    background: #f8f9fa;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.poll-option input[type="radio"] {
+    margin-right: 15px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.poll-option-text {
+    flex: 1;
+    font-size: 16px;
+}
+
+.answer-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-left: 10px;
+    flex-shrink: 0;
+}
+
+.poll-option:hover {
+    background: #e7f3ff;
+    border-color: #667eea;
+}
+
+.poll-option input[type="radio"]:checked + .poll-option-text,
+.poll-option input[type="radio"]:checked {
+    color: #667eea;
+}
+
+.poll-option.selected {
+    background: #e7f3ff;
+    border-color: #667eea;
+}
+
+.quiz-navigation {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: space-between;
+}
+
+.quiz-actions {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    text-align: center;
+}
+
+.result-screen {
+    text-align: center;
+    padding: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+}
+
+.score-display {
+    font-size: 64px;
+    font-weight: bold;
+    margin: 20px 0;
+}
+
+.score-percentage {
+    font-size: 32px;
+    margin: 10px 0;
+}
+
+.result-message {
+    font-size: 18px;
+    margin: 20px 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="quiz-container">
+    <!-- Background Music Player -->
+    <audio id="quizMusic" loop style="display: none;">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="startScreen" class="start-screen">
+        <h2>{{ quiz.title }}</h2>
+        <p>{{ quiz.description }}</p>
+        <p>{{ quiz.questions|length }} Questions</p>
+        
+        <!-- Time Limit Display -->
+        {% if quiz.time_limit_minutes %}
+        <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <i class="fas fa-clock"></i> Time Limit: <strong>{{ quiz.time_limit_minutes }} minutes</strong>
+        </div>
+        {% endif %}
+
+        <!-- Music Toggle -->
+        {% if quiz.enable_music %}
+        <div style="margin: 15px 0;">
+            <button class="btn btn-info" onclick="toggleMusic()" id="musicToggleBtn" style="margin-right: 10px;">
+                <i class="fas fa-volume-up"></i> Enable Music
+            </button>
+            <small style="color: rgba(255,255,255,0.8);">Relaxing background music for focus</small>
+        </div>
+        {% endif %}
+        
+        <button class="btn btn-primary btn-large" onclick="startQuiz()" style="margin-top: 20px;">Start Quiz</button>
+    </div>
+    
+    <div id="quizScreen" style="display: none;">
+        <!-- Timer Display -->
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="progress-bar-container" style="flex: 1; margin-right: 20px;">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div id="timerDisplay" style="font-size: 20px; font-weight: bold; min-width: 120px; text-align: right;">
+                {% if quiz.time_limit_minutes %}
+                <i class="fas fa-clock text-danger"></i> <span id="timeRemaining">{{ quiz.time_limit_minutes * 60 }}</span>s
+                {% else %}
+                <i class="fas fa-hourglass"></i> Unlimited
+                {% endif %}
+            </div>
+        </div>
+        
+        <div id="questionContainer"></div>
+        
+        <div class="quiz-navigation">
+            <button class="btn btn-secondary" onclick="previousQuestion()" id="prevBtn">← Previous</button>
+            <button class="btn btn-primary" onclick="nextQuestion()" id="nextBtn">Next →</button>
+            <button class="btn btn-success" onclick="submitQuiz()" id="submitBtn" style="display: none;">Submit Quiz</button>
+        </div>
+    </div>
+    
+    <div id="resultScreen" style="display: none;" class="result-screen">
+        <h2>Quiz Complete!</h2>
+        <p id="playerDisplay"></p>
+        <div class="score-display" id="scoreDisplay"></div>
+        <div class="score-percentage" id="percentageDisplay"></div>
+        <p class="result-message" id="resultMessage"></p>
+        <a href="#" id="viewResultsBtn" class="btn btn-light" style="margin-top: 20px;">View Detailed Results</a>
+        <a href="{{ url_for('quiz.index') }}" class="btn btn-light" style="margin-top: 20px; margin-left: 10px;">Take Another Quiz</a>
+    </div>
+</div>
+
+<script>
+let currentAttemptId = null;
+let currentQuestionIndex = 0;
+let quizStartTime = null;
+let timerInterval = null;
+let isMusicEnabled = false;
+
+const quizId = {{ quiz.id }};
+const quizTimeLimit = {{ quiz.time_limit_minutes or 'null' }};
+const quizHasMusic = {{ 'true' if quiz.enable_music else 'false' }};
+
+const questions = {%- set qlist = [] -%}{%- for q in quiz.questions -%}{%- set _ = qlist.append(q.to_dict()) -%}{%- endfor -%}{{ qlist|tojson }};
+let selectedAnswers = {};
+
+// Music functions
+function toggleMusic() {
+    const audio = document.getElementById('quizMusic');
+    const btn = document.getElementById('musicToggleBtn');
+    
+    if (isMusicEnabled) {
+        audio.pause();
+        isMusicEnabled = false;
+        btn.innerHTML = '<i class="fas fa-volume-up"></i> Enable Music';
+        btn.classList.remove('btn-warning');
+        btn.classList.add('btn-info');
+    } else {
+        audio.play();
+        isMusicEnabled = true;
+        btn.innerHTML = '<i class="fas fa-volume-mute"></i> Disable Music';
+        btn.classList.remove('btn-info');
+        btn.classList.add('btn-warning');
+    }
+}
+
+// Timer functions
+function startTimer() {
+    if (!quizTimeLimit) return; // No time limit set
+    
+    let timeRemaining = quizTimeLimit * 60; // Convert to seconds
+    
+    timerInterval = setInterval(() => {
+        timeRemaining--;
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        
+        const timerDisplay = document.getElementById('timeRemaining');
+        if (timerDisplay) {
+            timerDisplay.textContent = timeRemaining;
+        }
+        
+        // Change color based on remaining time
+        if (timeRemaining <= 60) {
+            if (timerDisplay) {
+                timerDisplay.parentElement.style.color = '#dc3545'; // Red
+            }
+        } else if (timeRemaining <= 300) {
+            if (timerDisplay) {
+                timerDisplay.parentElement.style.color = '#fd7e14'; // Orange
+            }
+        }
+        
+        if (timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            submitQuiz(true); // Auto-submit when time runs out
+            alert('Time is up! Your quiz has been submitted.');
+        }
+    }, 1000);
+}
+
+function stopTimer() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+}
+
+async function startQuiz() {
+    try {
+        const response = await fetch(`/api/quiz/${quizId}/start-attempt`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            currentAttemptId = result.attempt_id;
+            quizStartTime = Date.now();
+            
+            // Hide start screen and show quiz screen
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('quizScreen').style.display = 'block';
+            
+            // Start music if enabled
+            if (isMusicEnabled) {
+                document.getElementById('quizMusic').play();
+            }
+            
+            // Start timer
+            startTimer();
+            
+            loadQuestion();
+        } else {
+            alert('Error: ' + (result.message || 'Failed to start quiz'));
+        }
+    } catch (error) {
+        alert('Error starting quiz: ' + error);
+    }
+}
+
+function loadQuestion() {
+    if (currentQuestionIndex >= questions.length) return;
+    
+    const question = questions[currentQuestionIndex];
+    const container = document.getElementById('questionContainer');
+    
+    const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+    document.getElementById('progressBar').style.width = progress + '%';
+    
+    let html = `
+        <div class="poll-question">
+            <div class="question-number">Question ${currentQuestionIndex + 1} of ${questions.length}</div>
+            <div class="question-text">${question.question_text}</div>
+    `;
+    
+    if (question.image_url) {
+        html += `<img src="${question.image_url}" alt="Question image" class="question-image">`;
+    }
+    
+    html += `<div class="poll-options">`;
+    
+    question.answers.forEach((answer, i) => {
+        const isSelected = selectedAnswers[question.id] === answer.id;
+        let answerImageHtml = '';
+        if (answer.image_url) {
+            answerImageHtml = `<img src="${answer.image_url}" alt="Answer image" class="answer-image">`;
+        }
+        
+        html += `
+            <div class="poll-option ${isSelected ? 'selected' : ''}" onclick="selectAnswer(${question.id}, ${answer.id})">
+                <input type="radio" name="answer" id="answer_${answer.id}" value="${answer.id}" ${isSelected ? 'checked' : ''}>
+                <span class="poll-option-text">${answer.answer_text}</span>
+                ${answerImageHtml}
+            </div>
+        `;
+    });
+    
+    html += `
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+    
+    document.getElementById('prevBtn').disabled = currentQuestionIndex === 0;
+    document.getElementById('nextBtn').style.display = currentQuestionIndex < questions.length - 1 ? 'block' : 'none';
+    document.getElementById('submitBtn').style.display = currentQuestionIndex === questions.length - 1 ? 'block' : 'none';
+}
+
+function selectAnswer(questionId, answerId) {
+    selectedAnswers[questionId] = answerId;
+    document.querySelectorAll('.poll-option').forEach(opt => opt.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+}
+
+async function nextQuestion() {
+    if (currentQuestionIndex < questions.length - 1) {
+        const question = questions[currentQuestionIndex];
+        
+        if (selectedAnswers[question.id]) {
+            try {
+                await fetch(`/api/attempt/${currentAttemptId}/answer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question_id: question.id,
+                        answer_id: selectedAnswers[question.id]
+                    })
+                });
+            } catch (error) {
+                console.error('Error submitting answer:', error);
+            }
+        }
+        
+        currentQuestionIndex++;
+        loadQuestion();
+    }
+}
+
+function previousQuestion() {
+    if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        loadQuestion();
+    }
+}
+
+async function submitQuiz(autoSubmit = false) {
+    stopTimer();
+    
+    // Stop music
+    if (isMusicEnabled) {
+        document.getElementById('quizMusic').pause();
+    }
+    
+    const question = questions[currentQuestionIndex];
+    
+    if (selectedAnswers[question.id]) {
+        try {
+            await fetch(`/api/attempt/${currentAttemptId}/answer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question_id: question.id,
+                    answer_id: selectedAnswers[question.id]
+                })
+            });
+        } catch (error) {
+            console.error('Error submitting answer:', error);
+        }
+    }
+    
+    // Calculate time spent
+    const timeSpent = Math.floor((Date.now() - quizStartTime) / 1000);
+    
+    try {
+        // Update time spent
+        await fetch(`/api/attempt/${currentAttemptId}/time`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                time_spent_seconds: timeSpent
+            })
+        });
+        
+        // Complete the attempt
+        const response = await fetch(`/api/attempt/${currentAttemptId}/complete`, {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            showResults(result);
+        }
+    } catch (error) {
+        alert('Error completing quiz: ' + error);
+    }
+}
+
+function showResults(result) {
+    const attemptResponse = fetch(`/api/attempt/${currentAttemptId}`).then(r => r.json());
+    
+    attemptResponse.then(data => {
+        document.getElementById('quizScreen').style.display = 'none';
+        document.getElementById('resultScreen').style.display = 'block';
+        
+        document.getElementById('playerDisplay').textContent = `Player: {{ current_user.username }}`;
+        document.getElementById('scoreDisplay').textContent = `${result.score}/${result.total}`;
+        document.getElementById('percentageDisplay').textContent = `${result.percentage}%`;
+        
+        let message = '';
+        if (result.percentage === 100) {
+            message = '🎉 Perfect Score! Excellent work!';
+        } else if (result.percentage >= 80) {
+            message = '👏 Great job! Well done!';
+        } else if (result.percentage >= 60) {
+            message = '✓ Good effort! Keep practicing!';
+        } else {
+            message = '💪 Keep learning and try again!';
+        }
+        
+        document.getElementById('resultMessage').textContent = message;
+        
+        // Update results button link
+        const viewResultsBtn = document.getElementById('viewResultsBtn');
+        if (viewResultsBtn) {
+            viewResultsBtn.href = `/attempt/${currentAttemptId}/result`;
+        }
+    });
+}
+</script>
+{% endblock %}

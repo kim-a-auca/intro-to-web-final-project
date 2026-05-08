@@ -1,0 +1,5 @@
+Question,QuestionImage,Answer1,Answer1Image,Answer2,Answer2Image,Answer3,Answer3Image,Answer4,Answer4Image,CorrectAnswer
+Which algorithm uses a distance-based approach?,https://upload.wikimedia.org/wikipedia/commons/e/ef/Kdtree_2d.svg,K-Nearest Neighbors,https://upload.wikimedia.org/wikipedia/commons/e/ef/Kdtree_2d.svg,Decision Trees,,Linear Regression,,Random Forest,,K-Nearest Neighbors
+Which machine learning approach learns from labeled data?,,Supervised Learning,,Unsupervised Learning,,Reinforcement Learning,,Transfer Learning,,Supervised Learning
+What does CNN stand for?,,Convolutional Neural Network,,Compressed Neural Network,,Continuous Neural Network,,Current Neural Network,,Convolutional Neural Network
+Which optimization algorithm is commonly used in deep learning?,,Stochastic Gradient Descent,,Random Search,,Grid Search,,Evolutionary Algorithm,,Stochastic Gradient Descent

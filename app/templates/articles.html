@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Educational Articles - Quiz App{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <h1 class="mb-2">
+                    <i class="fas fa-newspaper text-primary"></i> Educational Articles
+                </h1>
+                <p class="text-muted">Enhance your knowledge with our curated collection of articles</p>
+            </div>
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('quiz.submit_article') }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Submit Article
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <form method="GET" class="input-group">
+                <input type="text" class="form-control" name="search" placeholder="Search articles..." 
+                       value="{{ search }}" aria-label="Search">
+                <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i> Search</button>
+                {% if search or current_category %}
+                    <a href="{{ url_for('quiz.articles_list') }}" class="btn btn-outline-secondary">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+        <div class="col-md-4">
+            <select class="form-select" onchange="window.location.href='{{ url_for('quiz.articles_list') }}?category=' + this.value{% if search %}&search={{ search }}{% endif %}'">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                    <option value="{{ cat }}" {% if cat == current_category %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Articles Grid -->
+    {% if articles %}
+    <div class="row">
+        {% for article in articles %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm article-card">
+                {% if article.thumbnail_url %}
+                <img src="{{ article.thumbnail_url }}" class="card-img-top" alt="{{ article.title }}" height="200" style="object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                    <i class="fas fa-image text-muted" style="font-size: 48px;"></i>
+                </div>
+                {% endif %}
+                
+                <div class="card-body d-flex flex-column">
+                    {% if article.category %}
+                    <span class="badge bg-info mb-2" style="width: fit-content;">{{ article.category }}</span>
+                    {% endif %}
+                    
+                    <h5 class="card-title">{{ article.title }}</h5>
+                    <p class="card-text text-muted flex-grow-1">{{ (article.description or '')[:100] }}{% if article.description and article.description|length > 100 %}...{% endif %}</p>
+                    
+                    <div class="article-meta small text-muted mb-3">
+                        <span><i class="far fa-eye"></i> {{ article.views }} views</span>
+                        <span class="ms-2"><i class="far fa-clock"></i> {{ article.read_time_minutes }} min read</span>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('quiz.view_article', slug=article.slug) }}" class="btn btn-primary btn-sm flex-grow-1">
+                            Read Article
+                        </a>
+                        <button class="btn btn-outline-warning btn-sm bookmark-btn" data-article-id="{{ article.id }}" 
+                                onclick="toggleBookmark({{ article.id }})">
+                            <i class="far fa-bookmark"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if pagination.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('quiz.articles_list', page=pagination.prev_num, search=search, category=current_category) }}">Previous</a>
+            </li>
+            {% endif %}
+
+            {% for page_num in pagination.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num == pagination.page %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('quiz.articles_list', page=page_num, search=search, category=current_category) }}">{{ page_num }}</a>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if pagination.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('quiz.articles_list', page=pagination.next_num, search=search, category=current_category) }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No articles found. Try adjusting your search or category filter.
+    </div>
+    {% endif %}
+
+    <!-- Quick Links -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card shadow-lg">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Links</h5>
+                    <a href="{{ url_for('quiz.index') }}" class="btn btn-primary">
+                        <i class="fas fa-tasks"></i> Take a Quiz
+                    </a>
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('quiz.my_bookmarks') }}" class="btn btn-secondary">
+                        <i class="fas fa-bookmark"></i> My Bookmarks
+                    </a>
+                    <a href="{{ url_for('quiz.my_results') }}" class="btn btn-info">
+                        <i class="fas fa-chart-line"></i> My Results
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('quiz.login') }}" class="btn btn-secondary">
+                        <i class="fas fa-sign-in-alt"></i> Login to Bookmark
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .article-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .article-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
+    }
+</style>
+
+<script>
+function toggleBookmark(articleId) {
+    if (!{{ 'true' if current_user.is_authenticated else 'false' }}) {
+        alert('Please login to bookmark articles');
+        window.location.href = '{{ url_for("quiz.login") }}';
+        return;
+    }
+    
+    fetch(`/api/article/${articleId}/bookmark`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const btn = document.querySelector(`[data-article-id="${articleId}"]`);
+        if (data.bookmarked) {
+            btn.classList.remove('btn-outline-warning');
+            btn.classList.add('btn-warning');
+            btn.innerHTML = '<i class="fas fa-bookmark"></i>';
+        } else {
+            btn.classList.add('btn-outline-warning');
+            btn.classList.remove('btn-warning');
+            btn.innerHTML = '<i class="far fa-bookmark"></i>';
+        }
+    });
+}
+</script>
+{% endblock %}

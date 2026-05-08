@@ -1,0 +1,65 @@
+{
+  "title": "Biology Quiz with Images",
+  "description": "Test your knowledge of biology with visual learning materials",
+  "questions": [
+    {
+      "text": "Which of the following is the correct structure of a plant cell?",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/4/48/Plant_cell_structure_en.svg",
+      "answers": [
+        {
+          "text": "Option A - Plant Cell",
+          "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/4/48/Plant_cell_structure_en.svg",
+          "correct": true
+        },
+        {
+          "text": "Option B - Animal Cell",
+          "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/3/34/Animal_cell_structure_en.svg",
+          "correct": false
+        },
+        {
+          "text": "Option C - Bacterial Cell",
+          "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Bacterial_cell_structure_en.svg",
+          "correct": false
+        }
+      ]
+    },
+    {
+      "text": "Identify which organism is a bacteria?",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/1/10/E_coli_at_10000x%2C_original.jpg",
+      "answers": [
+        {
+          "text": "E. coli (Bacteria)",
+          "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/1/10/E_coli_at_10000x%2C_original.jpg",
+          "correct": true
+        },
+        {
+          "text": "Human cell",
+          "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/3/34/Animal_cell_structure_en.svg",
+          "correct": false
+        },
+        {
+          "text": "Plant root cell",
+          "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/4/48/Plant_cell_structure_en.svg",
+          "correct": false
+        }
+      ]
+    },
+    {
+      "text": "What is the main function of the mitochondria?",
+      "answers": [
+        {
+          "text": "Energy production (ATP synthesis)",
+          "correct": true
+        },
+        {
+          "text": "Protein synthesis",
+          "correct": false
+        },
+        {
+          "text": "DNA storage",
+          "correct": false
+        }
+      ]
+    }
+  ]
+}

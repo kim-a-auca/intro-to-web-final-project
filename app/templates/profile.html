@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Poll Quiz App{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row">
+        <!-- Profile Card -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-lg h-100">
+                <div class="card-header bg-primary text-white text-center">
+                    <h5 class="mb-0">My Profile</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% if current_user.avatar_url %}
+                        <img src="{{ current_user.avatar_url }}" alt="Avatar" class="rounded-circle mb-3" width="120" height="120">
+                    {% else %}
+                        <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 120px; height: 120px; font-size: 48px;">
+                            {{ current_user.username[0].upper() }}
+                        </div>
+                    {% endif %}
+                    <h4>{{ current_user.get_full_name() }}</h4>
+                    <p class="text-muted mb-2">@{{ current_user.username }}</p>
+                    <p class="text-muted mb-3">{{ current_user.email }}</p>
+                    
+                    {% if current_user.bio %}
+                        <hr>
+                        <p class="text-secondary small">{{ current_user.bio }}</p>
+                    {% endif %}
+                    
+                    <hr>
+                    <p class="small text-muted mb-3">Member since {{ current_user.created_at.strftime('%B %d, %Y') }}</p>
+                    
+                    <button class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#edit-profile">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Card -->
+        <div class="col-lg-8">
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Quiz Statistics</h5>
+                </div>
+                <div class="card-body">
+                    {% if current_user.stats %}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6 class="text-secondary">Total Quizzes Taken</h6>
+                                <h3 class="text-primary">{{ current_user.stats.total_quizzes_taken }}</h3>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-secondary">Average Score</h6>
+                                <h3 class="text-info">{{ "%.1f"|format(current_user.stats.avg_score) }}%</h3>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6 class="text-secondary">Correct Answers</h6>
+                                <h3 class="text-success">{{ current_user.stats.total_correct_answers }}</h3>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-secondary">Wrong Answers</h6>
+                                <h3 class="text-danger">{{ current_user.stats.total_wrong_answers }}</h3>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-secondary">Current Rank</h6>
+                                <h3 class="text-warning">#{{ current_user.stats.rank }}</h3>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-secondary">Total Points</h6>
+                                <h3 class="text-dark">{{ current_user.stats.total_points }}</h3>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Complete a quiz to see your statistics!</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Attempts -->
+            <div class="card shadow-lg">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Recent Quiz Attempts</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_attempts %}
+                        <div class="list-group">
+                            {% for attempt in user_attempts[:5] %}
+                                {% if attempt.completed_at %}
+                                    <a href="{{ url_for('quiz.attempt_result', attempt_id=attempt.id) }}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                                            <h6 class="mb-0">{{ attempt.quiz.title }}</h6>
+                                            <span class="badge {% if attempt.percentage >= 70 %}bg-success{% elif attempt.percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ attempt.percentage }}%
+                                            </span>
+                                        </div>
+                                        <p class="mb-1 text-muted small">Score: {{ attempt.score }}/{{ attempt.total_questions }}</p>
+                                        <small class="text-muted">{{ attempt.completed_at.strftime('%b %d, %Y at %I:%M %p') }}</small>
+                                    </a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="mt-3">
+                            <a href="{{ url_for('quiz.my_results') }}" class="btn btn-outline-info btn-sm">
+                                View All Results & Graphs
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No quiz attempts yet. <a href="{{ url_for('quiz.index') }}">Take a quiz!</a></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-lg">
+                <div class="card-body">
+                    <h5 class="mb-3">Quick Actions</h5>
+                    <a href="{{ url_for('quiz.index') }}" class="btn btn-primary">
+                        <i class="fas fa-tasks"></i> Take a Quiz
+                    </a>
+                    <a href="{{ url_for('quiz.my_results') }}" class="btn btn-info">
+                        <i class="fas fa-chart-line"></i> View Detailed Results
+                    </a>
+                    <a href="{{ url_for('quiz.leaderboard') }}" class="btn btn-warning">
+                        <i class="fas fa-trophy"></i> View Leaderboard
+                    </a>
+                    <a href="{{ url_for('quiz.my_bookmarks') }}" class="btn btn-secondary">
+                        <i class="fas fa-bookmark"></i> My Bookmarks
+                    </a>
+                    <a href="{{ url_for('quiz.articles_list') }}" class="btn btn-secondary">
+                        <i class="fas fa-newspaper"></i> Learning Articles
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Original stats section for reference -->
+<style>
+    .card {
+        border: none;
+        border-radius: 10px;
+        transition: transform 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .card-header {
+        border-radius: 10px 10px 0 0;
+        font-weight: bold;
+    }
+</style>
+
+<div class="profile-container" style="display: none;">
+    <div class="profile-header">
+        <h1>{{ current_user.username }}'s Profile</h1>
+        <p class="email">{{ current_user.email }}</p>
+    </div>
+    
+    <div class="profile-stats">
+        <div class="stat-card">
+            <h3>{{ total_quizzes_taken }}</h3>
+            <p>Quizzes Taken</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ "%.1f"|format(avg_score) }}%</h3>
+            <p>Average Score</p>
+        </div>
+    </div>
+    
+    <div class="profile-section">
+        <h2>Quiz History</h2>
+        
+        {% if user_attempts %}
+            <table class="attempts-table">
+                <thead>
+                    <tr>
+                        <th>Quiz</th>
+                        <th>Date Completed</th>
+                        <th>Score</th>
+                        <th>Percentage</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attempt in user_attempts %}
+                        {% if attempt.completed_at %}
+                            <tr>
+                                <td>{{ attempt.quiz.title }}</td>
+                                <td>{{ attempt.completed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>{{ attempt.score }}/{{ attempt.total_questions }}</td>
+                                <td>{{ attempt.percentage }}%</td>
+                                <td>
+                                    <a href="{{ url_for('quiz.attempt_result', attempt_id=attempt.id) }}" class="link">View Details</a>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="no-attempts">You haven't taken any quizzes yet. <a href="{{ url_for('quiz.index') }}">Start taking quizzes</a></p>
+        {% endif %}
+    </div>
+    
+    <div class="profile-actions">
+        <a href="{{ url_for('quiz.index') }}" class="btn btn-secondary">Back to Quizzes</a>
+        <a href="{{ url_for('quiz.logout') }}" class="btn btn-secondary">Logout</a>
+    </div>
+</div>
+
+<style>
+.profile-container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.profile-header {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    padding: 30px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.profile-header h1 {
+    margin: 0 0 10px 0;
+    font-size: 32px;
+}
+
+.profile-header .email {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 16px;
+}
+
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.stat-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 32px;
+    color: #3498db;
+}
+
+.stat-card p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.profile-section {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.profile-section h2 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+}
+
+.attempts-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.attempts-table thead {
+    background-color: #f8f9fa;
+}
+
+.attempts-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 500;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+}
+
+.attempts-table td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.attempts-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+.attempts-table .link {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.attempts-table .link:hover {
+    text-decoration: underline;
+}
+
+.no-attempts {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+}
+
+.no-attempts a {
+    color: #3498db;
+}
+
+.profile-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    border: none;
+    display: inline-block;
+}
+
+.btn-secondary {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #7f8c8d;
+}
+</style>
+{% endblock %}

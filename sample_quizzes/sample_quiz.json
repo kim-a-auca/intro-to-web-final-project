@@ -1,0 +1,33 @@
+{
+  "title": "General Knowledge Quiz",
+  "description": "A sample quiz in JSON format",
+  "questions": [
+    {
+      "text": "What is the capital of France?",
+      "answers": [
+        {"text": "London", "correct": false},
+        {"text": "Paris", "correct": true},
+        {"text": "Berlin", "correct": false},
+        {"text": "Madrid", "correct": false}
+      ]
+    },
+    {
+      "text": "Which planet is known as the Red Planet?",
+      "answers": [
+        {"text": "Venus", "correct": false},
+        {"text": "Mars", "correct": true},
+        {"text": "Jupiter", "correct": false},
+        {"text": "Saturn", "correct": false}
+      ]
+    },
+    {
+      "text": "What is the largest ocean on Earth?",
+      "answers": [
+        {"text": "Atlantic Ocean", "correct": false},
+        {"text": "Indian Ocean", "correct": false},
+        {"text": "Arctic Ocean", "correct": false},
+        {"text": "Pacific Ocean", "correct": true}
+      ]
+    }
+  ]
+}

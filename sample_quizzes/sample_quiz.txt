@@ -1,0 +1,29 @@
+Question: What is the capital of France?
+A) London
+B) Paris*
+C) Berlin
+D) Madrid
+
+Question: Which planet is known as the Red Planet?
+A) Venus
+B) Mars*
+C) Jupiter
+D) Saturn
+
+Question: What is the largest ocean on Earth?
+A) Atlantic Ocean
+B) Indian Ocean
+C) Arctic Ocean
+D) Pacific Ocean*
+
+Question: Who wrote Romeo and Juliet?
+A) Christopher Marlowe
+B) William Shakespeare*
+C) John Milton
+D) Thomas Kyd
+
+Question: What is 2 + 2?
+A) 3
+B) 4*
+C) 5
+D) 6

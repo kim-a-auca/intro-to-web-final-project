@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Quiz - Poll Quiz App{% endblock %}
+
+{% block content %}
+<section class="form-section">
+    <h2>⬆️ Upload Quiz from File</h2>
+    
+    <div class="upload-container">
+        <div class="upload-info">
+            <h3>Supported Formats:</h3>
+            <div class="format-cards">
+                <div class="format-card">
+                    <h4>📊 CSV Format</h4>
+                    <p>Create a spreadsheet with columns:</p>
+                    <code>Question, QuestionImage, Answer1, Answer1Image, Answer2, Answer2Image, Answer3, Answer3Image, Answer4, Answer4Image, CorrectAnswer</code>
+                    <p><small>Image columns are optional. Use full image URLs. Mark the correct answer text in CorrectAnswer column</small></p>
+                </div>
+                
+                <div class="format-card">
+                    <h4>📋 JSON Format</h4>
+                    <p>Structured quiz data:</p>
+                    <code>{
+  "title": "Quiz Title",
+  "questions": [
+    {
+      "text": "Question?",
+      "imageUrl": "https://example.com/image.jpg",
+      "answers": [
+        {"text": "Answer 1", "imageUrl": "https://...", "correct": true},
+        {"text": "Answer 2", "imageUrl": "https://...", "correct": false}
+      ]
+    }
+  ]
+}</code>
+                    <p><small>imageUrl fields are optional. Use full image URLs for both questions and answers.</small></p>
+                </div>
+                
+                <div class="format-card">
+                    <h4>📝 TEXT Format</h4>
+                    <p>Simple text format:</p>
+                    <code>Question: What is X?
+QuestionImage: https://example.com/image.jpg
+A) Answer 1
+AnswerAImage: https://example.com/answer1.jpg
+B) Answer 2*
+AnswerBImage: https://example.com/answer2.jpg
+C) Answer 3
+D) Answer 4</code>
+                    <p><small>Mark correct answer with asterisk (*). Image sections are optional.</small></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="upload-form-wrapper">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="title">Quiz Title</label>
+                    <input type="text" id="title" name="title" placeholder="Name for this quiz" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="file">Select File *</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="file" name="file" accept=".csv,.json,.txt" required>
+                        <p class="file-info">Maximum size: 5MB | Formats: CSV, JSON, TXT</p>
+                    </div>
+                </div>
+                
+                <div id="uploadProgress" style="display: none; margin: 20px 0;">
+                    <p>Uploading...</p>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressIndicator"></div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-large">Upload Quiz</button>
+                    <a href="{{ url_for('quiz.index') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<style>
+.upload-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.upload-info {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.upload-info h3 {
+    color: #667eea;
+    margin-bottom: 20px;
+    font-size: 18px;
+}
+
+.format-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.format-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.format-card h4 {
+    color: #333;
+    margin: 0 0 10px 0;
+}
+
+.format-card p {
+    margin: 8px 0;
+    font-size: 13px;
+    color: #666;
+}
+
+.format-card code {
+    display: block;
+    background: white;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    overflow-x: auto;
+    margin: 8px 0;
+    border: 1px solid #ddd;
+}
+
+.upload-form-wrapper {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.file-input-wrapper {
+    position: relative;
+}
+
+.file-input-wrapper input[type="file"] {
+    padding: 15px;
+    background: #f8f9fa;
+    border: 2px dashed #667eea;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.file-input-wrapper input[type="file"]:hover {
+    background: #e7f3ff;
+}
+
+.file-info {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #999;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.form-actions .btn {
+    flex: 1;
+}
+
+.progress-bar-container {
+    background: #e9ecef;
+    height: 8px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    animation: progress 2s ease-in-out infinite;
+}
+
+@keyframes progress {
+    0% { width: 0%; }
+    50% { width: 100%; }
+    100% { width: 0%; }
+}
+</style>
+
+<script>
+document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    const fileInput = document.getElementById('file');
+    const titleInput = document.getElementById('title');
+    
+    if (!fileInput.files[0]) {
+        alert('Please select a file');
+        return;
+    }
+    
+    formData.append('file', fileInput.files[0]);
+    formData.append('title', titleInput.value);
+    
+    // Show progress
+    document.getElementById('uploadProgress').style.display = 'block';
+    
+    try {
+        const response = await fetch('/quiz/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Quiz uploaded successfully!\n' + result.message);
+            // Redirect to edit or view quiz
+            window.location.href = `/quiz/${result.quiz_id}/edit`;
+        } else {
+            alert('Upload failed: ' + result.message);
+        }
+    } catch (error) {
+        alert('Error uploading file: ' + error);
+    } finally {
+        document.getElementById('uploadProgress').style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Attempt Result - Poll Quiz App{% endblock %}
+
+{% block extra_css %}
+<style>
+.result-detail-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.result-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+}
+
+.result-score {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.score-item {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.score-label {
+    font-size: 12px;
+    opacity: 0.9;
+    margin-bottom: 5px;
+}
+
+.score-value {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.question-review {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.question-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.question-number {
+    font-weight: bold;
+    font-size: 18px;
+    color: #667eea;
+}
+
+.question-text {
+    font-size: 18px;
+    font-weight: 500;
+    color: #333;
+}
+
+.result-indicator {
+    font-weight: bold;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+
+.result-correct {
+    background: #d4edda;
+    color: #155724;
+}
+
+.result-incorrect {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.answer-option {
+    background: #f8f9fa;
+    border-left: 4px solid #ddd;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 4px;
+}
+
+.answer-option.user-answer {
+    border-left-color: #667eea;
+    background: #e7f3ff;
+}
+
+.answer-option.correct-answer {
+    border-left-color: #28a745;
+    background: #d4edda;
+}
+
+.answer-label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #666;
+    margin-bottom: 3px;
+}
+
+.answer-text {
+    font-size: 16px;
+    color: #333;
+}
+
+.answer-image-container {
+    margin-top: 8px;
+}
+
+.answer-image-container img {
+    max-width: 100%;
+    max-height: 150px;
+    border-radius: 6px;
+    display: block;
+}
+
+.question-image {
+    max-width: 100%;
+    max-height: 250px;
+    border-radius: 8px;
+    margin: 15px 0;
+    display: block;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: center;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="result-detail-container">
+    <div class="result-header">
+        <h2>{{ attempt.user_name }}'s Result</h2>
+        <p>{{ quiz.title }}</p>
+        
+        <div class="result-score">
+            <div class="score-item">
+                <div class="score-label">Score</div>
+                <div class="score-value">{{ attempt.score }}/{{ attempt.total_questions }}</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">Percentage</div>
+                <div class="score-value">{{ attempt.percentage }}%</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">Time</div>
+                <div class="score-value">
+                    {% if attempt.completed_at %}
+                        {{ ((attempt.completed_at - attempt.started_at).total_seconds() / 60)|int }} min
+                    {% else %}
+                        In Progress
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <h3>Question Review</h3>
+    
+    {% for question in questions %}
+        {% set response = attempt.responses|selectattr('question_id', 'equalto', question.id)|first %}
+        {% set is_correct = response and response.is_correct %}
+        
+        <div class="question-review">
+            <div class="question-header">
+                <div class="question-number">#{{ loop.index }}</div>
+                <div class="question-text">{{ question.question_text }}</div>
+                <span class="result-indicator {% if is_correct %}result-correct{% else %}result-incorrect{% endif %}">
+                    {% if is_correct %}✓ Correct{% else %}✗ Incorrect{% endif %}
+                </span>
+            </div>
+            
+            {% if question.image_url %}
+                <img src="{{ question.image_url }}" alt="Question image" class="question-image">
+            {% endif %}
+            
+            <div>
+                {% for answer in question.answers %}
+                    {% set is_user_answer = response and response.answer_id == answer.id %}
+                    {% set is_correct_answer = answer.is_correct %}
+                    
+                    <div class="answer-option {% if is_user_answer %}user-answer{% elif is_correct_answer %}correct-answer{% endif %}">
+                        <div class="answer-label">
+                            {% if is_user_answer %}Your Answer:{% elif is_correct_answer %}Correct Answer:{% else %}Other Answer:{% endif %}
+                        </div>
+                        <div class="answer-text">{{ answer.answer_text }}</div>
+                        {% if answer.image_url %}
+                            <div class="answer-image-container">
+                                <img src="{{ answer.image_url }}" alt="Answer image">
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+    
+    <div class="actions">
+        <a href="{{ url_for('quiz.quiz_results', quiz_id=quiz.id) }}" class="btn btn-secondary">Back to Results</a>
+        <a href="{{ url_for('quiz.index') }}" class="btn btn-primary">Home</a>
+    </div>
+</div>
+{% endblock %}

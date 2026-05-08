@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}My Results — Quizly{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap mb-4">
+    <div>
+        <h1 class="mb-1"><i class="fas fa-chart-line text-primary me-2"></i>My Results</h1>
+        <p class="text-muted mb-0">Track your performance, accuracy, and progress over time.</p>
+    </div>
+    <a href="{{ url_for('quiz.index') }}" class="btn btn-primary">
+        <i class="fas fa-tasks"></i> Take a quiz
+    </a>
+</div>
+
+{% if stats_graph %}
+<div class="stat-grid">
+    <div class="stat-card stat-primary">
+        <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+        <div class="stat-label">Quizzes</div>
+        <div class="stat-value">{{ stats_graph.cards.quizzes }}</div>
+    </div>
+    <div class="stat-card stat-pink">
+        <div class="stat-icon"><i class="fas fa-star"></i></div>
+        <div class="stat-label">Points</div>
+        <div class="stat-value">{{ stats_graph.cards.points }}</div>
+    </div>
+    <div class="stat-card stat-success">
+        <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+        <div class="stat-label">Avg Score</div>
+        <div class="stat-value">{{ "%.1f"|format(stats_graph.cards.avg) }}%</div>
+    </div>
+    <div class="stat-card stat-warning">
+        <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+        <div class="stat-label">Rank</div>
+        <div class="stat-value">{% if stats_graph.cards.rank %}#{{ stats_graph.cards.rank }}{% else %}—{% endif %}</div>
+    </div>
+    <div class="stat-card stat-info">
+        <div class="stat-icon"><i class="fas fa-medal"></i></div>
+        <div class="stat-label">Best Score</div>
+        <div class="stat-value">{{ stats_graph.cards.best }}</div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><h5>Answer Accuracy</h5></div>
+            <div class="card-body">
+                <div class="chart-wrap" style="height: 300px;">
+                    <canvas id="accuracyChart" class="chart-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><h5>Score Distribution</h5></div>
+            <div class="card-body">
+                <div class="chart-wrap" style="height: 300px;">
+                    <canvas id="distributionChart" class="chart-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><h5>Pass / Below-pass (≥70%)</h5></div>
+            <div class="card-body">
+                <div class="chart-wrap" style="height: 300px;">
+                    <canvas id="passChart" class="chart-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><h5>Performance Trend</h5></div>
+            <div class="card-body">
+                <div class="chart-wrap" style="height: 300px;">
+                    <canvas id="trendChart" class="chart-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if category_graph and category_graph.labels %}
+<div class="card mb-4">
+    <div class="card-header"><h5>Average Score Per Quiz</h5></div>
+    <div class="card-body">
+        <div class="chart-wrap" style="height: {{ 60 + 36 * (category_graph.labels|length) }}px;">
+            <canvas id="perQuizChart" class="chart-canvas"></canvas>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<div class="card">
+    <div class="card-header"><h5>All Quiz Attempts</h5></div>
+    <div class="card-body">
+        {% if attempts %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Quiz</th>
+                        <th>Date</th>
+                        <th>Score</th>
+                        <th>Percentage</th>
+                        <th>Time</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attempt in attempts %}
+                    <tr>
+                        <td><strong>{{ attempt.quiz.title }}</strong></td>
+                        <td><small class="text-muted">{{ attempt.completed_at.strftime('%b %d, %Y · %I:%M %p') }}</small></td>
+                        <td><strong>{{ attempt.score }}/{{ attempt.total_questions }}</strong></td>
+                        <td>
+                            <span class="badge {% if attempt.percentage >= 70 %}bg-success{% elif attempt.percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ attempt.percentage }}%
+                            </span>
+                        </td>
+                        <td>
+                            {% if attempt.time_spent_seconds %}
+                                {{ (attempt.time_spent_seconds // 60)|int }}m {{ (attempt.time_spent_seconds % 60)|int }}s
+                            {% else %}<span class="text-muted">—</span>{% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('quiz.attempt_result', attempt_id=attempt.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i> Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p class="mb-3">No completed quizzes yet.</p>
+            <a href="{{ url_for('quiz.index') }}" class="btn btn-primary">Take your first quiz</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = '#475569';
+  Chart.defaults.plugins.tooltip.backgroundColor = '#0F172A';
+  Chart.defaults.plugins.tooltip.padding = 10;
+  Chart.defaults.plugins.tooltip.cornerRadius = 8;
+  Chart.defaults.plugins.tooltip.titleFont = { weight: '600' };
+
+  const stats = {{ stats_graph|tojson if stats_graph else 'null' }};
+  const trend = {{ performance_graph|tojson if performance_graph else 'null' }};
+  const perQuiz = {{ category_graph|tojson if category_graph else 'null' }};
+
+  if (stats) {
+    // Accuracy donut
+    new Chart(document.getElementById('accuracyChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Correct', 'Wrong'],
+        datasets: [{
+          data: [stats.accuracy.correct, stats.accuracy.wrong],
+          backgroundColor: ['#10B981', '#F43F5E'],
+          borderColor: '#fff', borderWidth: 4, hoverOffset: 6,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } },
+          tooltip: { callbacks: { label: (c) => `${c.label}: ${c.parsed}` } },
+        },
+      },
+      plugins: [{
+        id: 'centerLabel',
+        afterDraw(chart) {
+          const total = stats.accuracy.correct + stats.accuracy.wrong;
+          if (total === 0) return;
+          const pct = Math.round(stats.accuracy.correct / total * 100);
+          const { ctx, chartArea: { left, right, top, bottom } } = chart;
+          const cx = (left + right) / 2;
+          const cy = (top + bottom) / 2;
+          ctx.save();
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#0F172A';
+          ctx.font = '700 28px Inter, sans-serif';
+          ctx.fillText(pct + '%', cx, cy - 6);
+          ctx.fillStyle = '#64748B';
+          ctx.font = '500 11px Inter, sans-serif';
+          ctx.fillText('accuracy', cx, cy + 18);
+          ctx.restore();
+        }
+      }]
+    });
+
+    // Score distribution
+    new Chart(document.getElementById('distributionChart'), {
+      type: 'bar',
+      data: {
+        labels: stats.distribution.labels,
+        datasets: [{
+          data: stats.distribution.data,
+          backgroundColor: stats.distribution.colors,
+          borderRadius: 8,
+          borderSkipped: false,
+          maxBarThickness: 56,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#64748B' } },
+          y: { beginAtZero: true, grid: { color: '#E2E8F0' }, ticks: { precision: 0, color: '#64748B' } },
+        },
+      },
+    });
+
+    // Pass / below-pass
+    const ps = stats.pass_split;
+    new Chart(document.getElementById('passChart'), {
+      type: 'pie',
+      data: {
+        labels: ['Passed (≥70%)', 'Below pass'],
+        datasets: [{
+          data: [ps.passed, ps.below],
+          backgroundColor: ['#10B981', '#F59E0B'],
+          borderColor: '#fff', borderWidth: 4, hoverOffset: 6,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } } },
+      },
+    });
+  }
+
+  if (trend && trend.data.length) {
+    const ctx = document.getElementById('trendChart');
+    // Gradient under the line
+    const grad = ctx.getContext('2d').createLinearGradient(0, 0, 0, 280);
+    grad.addColorStop(0, 'rgba(99,102,241,0.32)');
+    grad.addColorStop(1, 'rgba(99,102,241,0.02)');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: trend.labels,
+        datasets: [{
+          label: 'Score (%)',
+          data: trend.data,
+          borderColor: '#6366F1', borderWidth: 3,
+          backgroundColor: grad,
+          fill: true, tension: 0.35,
+          pointBackgroundColor: trend.point_colors,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 6, pointHoverRadius: 9,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#64748B' } },
+          y: { beginAtZero: true, max: 105, grid: { color: '#E2E8F0' }, ticks: { color: '#64748B', callback: v => v + '%' } },
+        },
+      },
+    });
+  }
+
+  if (perQuiz && perQuiz.labels.length) {
+    new Chart(document.getElementById('perQuizChart'), {
+      type: 'bar',
+      data: {
+        labels: perQuiz.labels,
+        datasets: [{
+          data: perQuiz.data,
+          backgroundColor: perQuiz.colors,
+          borderRadius: 8,
+          borderSkipped: false,
+          maxBarThickness: 26,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.x + '%' } } },
+        scales: {
+          x: { beginAtZero: true, max: 105, grid: { color: '#E2E8F0' }, ticks: { color: '#64748B', callback: v => v + '%' } },
+          y: { grid: { display: false }, ticks: { color: '#64748B' } },
+        },
+      },
+    });
+  }
+})();
+</script>
+{% endblock %}

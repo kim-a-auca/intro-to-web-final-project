@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Results - Poll Quiz App{% endblock %}
+
+{% block extra_css %}
+<style>
+.results-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.results-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.results-header h2 {
+    margin: 0 0 10px 0;
+}
+
+.attempts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.attempt-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.attempt-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #667eea;
+}
+
+.attempt-card h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.attempt-score {
+    font-size: 32px;
+    font-weight: bold;
+    color: #667eea;
+    margin: 10px 0;
+}
+
+.attempt-percentage {
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.attempt-meta {
+    font-size: 14px;
+    color: #999;
+    margin: 10px 0;
+}
+
+.attempt-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.stat-box {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <div class="results-header">
+        <h2>{{ quiz.title }} - Results</h2>
+        <p>{{ quiz.description }}</p>
+    </div>
+    
+    {% if attempts %}
+        <div class="stats-summary">
+            <div class="stat-box">
+                <div class="stat-label">Total Attempts</div>
+                <div class="stat-value">{{ attempts|length }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Average Score</div>
+                <div class="stat-value">{% set total = 0 %}{% set count = 0 %}{% for a in attempts %}{% if a.completed_at %}{% set total = total + a.score %}{% set count = count + 1 %}{% endif %}{% endfor %}{{ (total / count)|round(1) if count > 0 else 0 }}%</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Best Score</div>
+                <div class="stat-value">{% set max_score = 0 %}{% for a in attempts %}{% if a.completed_at and a.total_questions > 0 %}{% set pct = (a.score / a.total_questions * 100)|int %}{% if pct > max_score %}{% set max_score = pct %}{% endif %}{% endif %}{% endfor %}{{ max_score }}%</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Completed</div>
+                <div class="stat-value">{% set completed = attempts|selectattr('completed_at')|list|length %}{{ completed }}</div>
+            </div>
+        </div>
+        
+        <h3>Recent Attempts</h3>
+        <div class="attempts-grid">
+            {% for attempt in attempts %}
+                <div class="attempt-card" onclick="location.href='/attempt/{{ attempt.id }}/result'">
+                    <h3>{{ attempt.user_name }}</h3>
+                    
+                    {% if attempt.completed_at %}
+                        <div class="attempt-score">{{ attempt.score }}/{{ attempt.total_questions }}</div>
+                        <div class="attempt-percentage">{{ attempt.percentage }}%</div>
+                        <span class="attempt-status status-completed">Completed</span>
+                    {% else %}
+                        <div class="attempt-percentage">In Progress</div>
+                        <span class="attempt-status status-pending">Pending</span>
+                    {% endif %}
+                    
+                    <div class="attempt-meta">
+                        Started: {{ attempt.started_at.strftime('%B %d, %Y %I:%M %p') }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>No attempts yet. <a href="{{ url_for('quiz.view_quiz', quiz_id=quiz.id) }}">Start taking the quiz!</a></p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
